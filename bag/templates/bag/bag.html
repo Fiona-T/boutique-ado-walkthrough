@@ -48,9 +48,12 @@
                             <td class="p-3 w-25">
                                 <img class="img-fluid rounded" src="{{ item.product.image.url }}" alt="">
                             </td>
-                            <!-- 2nd col - name and sku -->
+                            <!-- 2nd col - name, size and sku -->
                             <td class="p-3">
                                 <p class="my-0"><strong>{{ item.product.name }}</strong></p>
+                                <p class="my-0"><strong>Size:
+                                    </strong>{% if item.product.has_sizes %}{{ item.size|upper }}{% else %}N/A{% endif %}
+                                </p>
                                 <p class="py-0 small text-muted">SKU: {{ item.product.sku|upper }}</p>
                             </td>
                             <!-- 3rd col - price -->
