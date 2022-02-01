@@ -16,21 +16,38 @@ def bag_contents(request):
     bag = request.session.get('bag', {})
 
     # for each item and quantity in session variable bag dict items
-    for item_id, quantity in bag.items():
-        # get the product from Product table using id of item
-        product = get_object_or_404(Product, pk=item_id)
-        # multiply its price by quantity and add this to total variable
-        total += quantity * product.price
-        # increase product_count varibale by the quantity
-        product_count += quantity
-        # add the below dictionary to bag_items list
-        # item id, quantity, and the product object (so that other attributes of product will be available in template)
-        bag_items.append({
-            'item_id': item_id,
-            'quantity': quantity,
-            'product': product,
-        })
-
+    # quantity renamed to item_data - if no sizes, it's quantity. if sizes, it's dict of items by size
+    for item_id, item_data in bag.items():
+        # if the item has no sizes, i.e. item_data is an integer - as it is just the quantity
+        if isinstance(item_data, int):
+            # get the product from Product table using id of item
+            product = get_object_or_404(Product, pk=item_id)
+            # multiply its price by quantity and add this to total variable
+            total += item_data * product.price
+            # increase product_count varibale by the quantity
+            product_count += item_data
+            # add the below dictionary to bag_items list
+            # item id, quantity, and the product object (so that other attributes of product will be available in template)
+            bag_items.append({
+                'item_id': item_id,
+                'quantity': item_data,
+                'product': product,
+            })
+        # item_data is a dict, i.e. item has sizes
+        else:
+            # iterate through inner dict items_by_size
+            for size, quantity in item_data['items_by_size'].items():
+                # get the product from Product table using id of item
+                product = get_object_or_404(Product, pk=item_id)
+                total += quantity * product.price
+                # increase product_count varibale by the quantity
+                product_count += quantity
+                bag_items.append({
+                    'item_id': item_id,
+                    'quantity': item_data,
+                    'product': product,
+                    'size': size,
+                })
 
 
     if total < settings.FREE_DELIVERY_THRESHOLD:
