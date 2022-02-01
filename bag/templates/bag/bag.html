@@ -27,7 +27,10 @@
         <div class="col">
             {% if bag_items %}
             <!-- bag contents -->
-            <div class="table-responsive rounded"></div>
+            <div class="table-responsive rounded">
+                <!-- test rendering out the bag items -->
+                {{ bag_items }}
+            </div>
             {% else %}
             <!-- if nothing in bag, give a link back to products page -->
             <p class="lead mb-5">Your bag is empty</p>
