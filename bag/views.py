@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect, reverse, HttpResponse
+from django.contrib import messages
+from products.models import Product
 
 
 def view_bag(request):
@@ -8,6 +10,8 @@ def view_bag(request):
 
 def add_to_bag(request, item_id):
     """Add a quantity of the specified product to the shopping bag"""
+    product = Product.objects.get(pk=item_id)
+
     # quantity from the form, convert to integer as will come from template as string
     quantity = int(request.POST.get('quantity'))
     # get the redirect url from the hidden form input - so can redirect after
@@ -44,6 +48,7 @@ def add_to_bag(request, item_id):
         else:
             # otherwise create key of the item id, set it equal to the quantity
             bag[item_id] = quantity
+            messages.error(request, f'Added {product.name} to your bag')
     # put bag variable into session dictionary, (overwrite the variable in session
     # with updated version, if it existed before this)
     request.session['bag'] = bag

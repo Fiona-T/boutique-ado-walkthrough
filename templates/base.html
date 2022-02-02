@@ -146,7 +146,26 @@
     </header>
 
     {% if messages %}
-    <div class="message-container"></div>
+    <div class="message-container">
+        {% for message in messages %}
+            <!-- using Django message levels -->
+            {% with message.level as level %}
+                <!-- error -->
+                {% if level == 40 %}
+                    {% include 'includes/toasts/toast_error.html' %}
+                <!-- warning -->
+                {% elif level == 30 %}
+                    {% include 'includes/toasts/toast_warning.html' %}
+                <!-- success -->
+                {% elif level == 25 %}
+                    {% include 'includes/toasts/toast_success.html' %}
+                <!-- info for everything else -->
+                {% else %}
+                    {% include 'includes/toasts/toast_info.html' %}
+                {% endif %}
+            {% endwith %}
+        {% endfor %}
+    </div>
     {% endif %}
 
     {% block page_header %}
@@ -159,6 +178,10 @@
 
     {% block postloadjs %}
     <!-- specific page scripts that need to load at end of body -->
+    <script>
+        // call BS toast method with show option on all elements with class toast
+        $('.toast').toast('show');
+    </script>
     {% endblock %}
 
 </body>
