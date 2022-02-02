@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load bag_tools %}
 
 {% block page_header %}
 <div class="container header-container">
@@ -61,49 +62,43 @@
                                 <p class="my-0">€{{ item.product.price }}</p>
                             </td>
                             <!-- 4th col - quantity -->
-                            <td class="p-3 w-25">
-                                <!-- form to amend the quantity while in shopping bag -->
-                                <form action="" method="POST" class="form update-form">
-                                    {% csrf_token %}
-                                    <div class="form-group">
-                                        <div class="input-group">
-                                            <!-- quantity button - decrease quantity -->
-                                            <div class="input-group-prepend">
-                                                <!-- id is for JS - which will handle updating the input box when the button is used -->
-                                                <button class="decrement-qty btn btn-sm btn-black rounded-0"
-                                                    data-item_id="{{ item.item_id }}" id="decrement-qty_{{ item.item_id }}">
-                                                    <span>
-                                                        <i class="fas fa-minus fa-sm"></i>
-                                                    </span>
-                                                </button>
+<td class="py-3 w-25">
+                                        <form class="form update-form" method="POST" action="{% url 'adjust_bag' item.item_id %}">
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <button class="decrement-qty btn btn-sm btn-black rounded-0" 
+                                                            data-item_id="{{ item.item_id }}" id="decrement-qty_{{ item.item_id }}">
+                                                            <span>
+                                                                <i class="fas fa-minus fa-sm"></i>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                    <input class="form-control form-control-sm qty_input" type="number"
+                                                        name="quantity" value="{{ item.quantity }}" min="1" max="99"
+                                                        data-item_id="{{ item.item_id }}"
+                                                        id="id_qty_{{ item.item_id }}">
+                                                    <div class="input-group-append">
+                                                        <button class="increment-qty btn btn-sm btn-black rounded-0"
+                                                            data-item_id="{{ item.item_id }}" id="increment-qty_{{ item.item_id }}">
+                                                            <span>
+                                                                <i class="fas fa-plus fa-sm"></i>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                    {% if item.product.has_sizes %}
+                                                        <input type="hidden" name="product_size" value="{{ item.size }}">
+                                                    {% endif %}
+                                                </div>
                                             </div>
-                                            <!-- input for quantity -->
-                                            <input class="form-control form-control-sm qty_input" type="number" name="quantity" value="{{ item.quantity}}"
-                                                min="1" max="99" data-item_id="{{ item.item_id }}" id="id_qty_{{ item.item_id }}">
-                                            <!-- quantity button - increase quantity -->
-                                            <div class="input-group-append">
-                                                <!-- id is for JS - which will handle updating the input box when the button is used -->
-                                                <button class="increment-qty btn btn-sm btn-black rounded-0"
-                                                    data-item_id="{{ item.item_id }}" id="increment-qty_{{ item.item_id }}">
-                                                    <span>
-                                                        <i class="fas fa-plus fa-sm"></i>
-                                                    </span>
-                                                </button>
-                                            </div>
-                                            <!-- submit the size of the item in hidden input -->
-                                            {% if item.product.has_sizes %}
-                                            <input type="hidden" name="product_size" value="{{ item.size }}">
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </form>
-                                <!-- these links will submit the form with updated quantity, or remove an item -->
-                                <a href="" class="update-link text-info"><small>Update</small></a>
-                                <a href="" class="remove-item text-danger float-right" id="remove_{{ item.item_id }}" data-size="{{ item.size }}"><small>Remove</small></a>
-                            </td>
+                                        </form>
+                                        <a class="update-link text-info"><small>Update</small></a>
+                                        <a class="remove-item text-danger float-right" id="remove_{{ item.item_id }}" data-product_size="{{ item.size }}"><small>Remove</small></a>
+                                    </td>
                             <!-- 5th col - subtotal -setting as price now, will come back to -->
                             <td class="p-3">
-                                <p class="my-0">€{{ item.product.price }}</p>
+                                <p class="my-0">€{{ item.product.price | calc_subtotal:item.quantity }}</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -174,17 +169,16 @@
         // id="remove_{{ item.item_id }}"
         let itemId = $(this).attr('id').split('remove_')[1];
         // item size is from the data atrribute: data-size="{{ item.size }}"
-        let size = $(this).data('size');
+        let size = $(this).data('product_size');
         // url - we need to create this later
-        let url = `/bag/remove/${itemId}`;
+        let url = `/bag/remove/${itemId}/`;
         // data is the object to send this data to the server
         // 'csrfmiddlewaretoken' key - value is the variable above, which is what Django is expecting to see
         // in request.post when form is posted to server
         // size key - value is size variable from above
-        let data = {'csrfmiddlewaretoken': csrfToken, 'size': size};
+        let data = {'csrfmiddlewaretoken': csrfToken, 'product_size': size};
         // jquery post method, pass it the url and data
         $.post(url, data)
-        // when done, reload the page
          .done(function() {
              location.reload();
          });

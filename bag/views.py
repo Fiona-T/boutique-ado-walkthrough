@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, reverse, HttpResponse
 
 
 def view_bag(request):
@@ -43,9 +43,80 @@ def add_to_bag(request, item_id):
             bag[item_id] += quantity
         else:
             # otherwise create key of the item id, set it equal to the quantity
-            bag[item_id] = quantity   
+            bag[item_id] = quantity
     # put bag variable into session dictionary, (overwrite the variable in session
     # with updated version, if it existed before this)
     request.session['bag'] = bag
     # return user to the url that came from the 'redirect_url' form input(hidden)
     return redirect(redirect_url)
+
+
+def adjust_bag(request, item_id):
+    """Adjust quantity of the specified product to the specified amount"""
+    # quantity from the form, convert to integer as will come from template as string
+    quantity = int(request.POST.get('quantity'))
+    size = None
+    # set size to size from the form, if it is there
+    if 'product_size' in request.POST:
+        size = request.POST['product_size']
+    # shopping bag to be held in session storage
+    # get the bag variable if it exists, or create empty dictionary for it if not there
+    bag = request.session.get('bag', {})
+    print(bag)
+
+    # if a product with sizes is being adjusted (this is adjusting item already in bag)
+    if size:
+        # if quantity greater than 0, adjust it to the new quantity, otherwise remove item
+        # drill into items_by_size dict, find the size and update that quantity/delete it
+        if quantity > 0:
+            bag[item_id]['items_by_size'][size] = quantity
+        else:
+            del bag[item_id]['items_by_size'][size]
+            # if that's the only size they had, i.e. items_by_size dict is now empty
+            if not bag[item_id]['items_by_size']:
+                # remove that item
+                bag.pop(item_id)
+    # if no sizes - adjust quantity to new quantity, or if qty is 0 then delete (pop) it
+    else:
+        if quantity > 0:
+            bag[item_id] = quantity
+        else:
+            bag.pop(item_id)
+
+    # put bag variable into session dictionary, (overwrite the variable in session
+    # with updated version, if it existed before this)
+    request.session['bag'] = bag
+    # return user to the url using reverse, to go back to the view_bag url
+    return redirect(reverse('view_bag'))
+
+
+def remove_from_bag(request, item_id):
+    """Remove the item from the shopping bag"""
+    try:
+        size = None
+        # set size to size from the form, if it is there
+        if 'product_size' in request.POST:
+            size = request.POST['product_size']
+        # shopping bag to be held in session storage
+        # get the bag variable if it exists, or create empty dictionary for it if not there
+        bag = request.session.get('bag', {})
+
+        # if a product with sizes is being removed
+        if size:
+            # delete the specific size of that item
+            del bag[item_id]['items_by_size'][size]
+            # if that's the only size they had, i.e. items_by_size dict is now empty
+            if not bag[item_id]['items_by_size']:
+                # remove that item
+                bag.pop(item_id)
+        # if no sizes - then delete (pop) the item
+        else:
+            bag.pop(item_id)
+
+        # put bag variable into session dictionary, (overwrite the variable in session
+        # with updated version, if it existed before this)
+        request.session['bag'] = bag
+        # return successful response
+        return HttpResponse(status=200)
+    except Exception as e:
+        return HttpResponse(status=500)
