@@ -6,10 +6,10 @@
 */
 
 // get the text from the script elements, and stlice off the quotation marks
-const stripe_public_key = $('#id_stripe_public_key').text().slice(1, -1);
-const client_secret = $('#id_client_secret').text().slice(1, -1);
+const stripePublicKey = $('#id_stripe_public_key').text().slice(1, -1);
+const clientSecret = $('#id_client_secret').text().slice(1, -1);
 // stripe public key
-const stripe = Stripe(stripe_public_key);
+const stripe = Stripe(stripePublicKey);
 // create instance of stripe elements
 const elements = stripe.elements();
 const style = {
@@ -31,3 +31,55 @@ const style = {
 const card = elements.create('card', {style: style});
 // mount the card element to the div in the checkout.html file
 card.mount('#card-element');
+
+// handle realtime validation errors on the card element
+card.addEventListener('change', function(event) {
+    let errorDiv = document.getElementById('card-errors');
+    // if there's an error, display it in error div
+    if (event.error) {
+        let html = `
+        <span class="icon" role="alert">
+            <i class="fas fa-times"></i>
+        </span>
+        <span>${event.error.message}</span>
+        `;
+        $(errorDiv).html(html);
+    } else {
+        errorDiv.textContent = '';
+    }
+});
+
+// Handle form submit
+const form = document.getElementById('payment-form');
+
+form.addEventListener('submit', function(ev) {
+    ev.preventDefault();
+    // disable card element and submit btn to prevent multiple submissions
+    card.update({ 'disabled': true});
+    $('#submit-button').attr('disabled', true);
+    // call confirm card payment method, providing the card to stripe, then execute
+    // the function on the result
+    stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+            card: card,
+        }
+    }).then(function(result) {
+        if (result.error) {
+            let errorDiv = document.getElementById('card-errors');
+            let html = `
+                <span class="icon" role="alert">
+                <i class="fas fa-times"></i>
+                </span>
+                <span>${result.error.message}</span>`;
+            $(errorDiv).html(html);
+            // re-enable the card element and the submit btn so error can be fixed
+            card.update({ 'disabled': false});
+            $('#submit-button').attr('disabled', false);
+        } else {
+            // payment successful, submit the form (prevented above)
+            if (result.paymentIntent.status === 'succeeded') {
+                form.submit();
+            }
+        }
+    });
+});
