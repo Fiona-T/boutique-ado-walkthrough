@@ -1,5 +1,7 @@
 """views for checkout app"""
-from django.shortcuts import render, redirect, reverse, get_object_or_404
+import json
+from django.shortcuts import render, redirect, reverse, get_object_or_404, HttpResponse
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.conf import settings
 
@@ -9,6 +11,34 @@ from bag.contexts import bag_contents
 from products.models import Product
 from .forms import OrderForm
 from .models import OrderLineItem, Order
+
+
+@require_POST
+def cache_checkout_data(request):
+    """
+    for the save info check box
+    Before calling confirmCardPayment in js, make a post request to this view
+    Give it the client secret from payment intent, modify payment intent
+    """
+    try:
+        # first part of client secret is the payment intent id
+        pid = request.POST.get('client_secret').split('_secret')[0]
+        # give stripe the secret key, so we can modify the payment intent
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        # call the PaymentIntent.modify, give it pid and info we want to modify
+        stripe.PaymentIntent.modify(pid, metadata={
+            # json dump of shopping bag contents - required later
+            'bag': json.dumps(request.session.get('bag', {})),
+            # whether or not the user wanted to save their info
+            'save_info': request.POST.get('save_info'),
+            # the user
+            'username': request.user,
+        })
+        return HttpResponse(status=200)
+    except Exception as e:
+        messages.error(request, 'Sorry, your payment cannot be \
+            processed right now. Please try again later.')
+        return HttpResponse(content=e, status=400)
 
 
 def checkout(request):
