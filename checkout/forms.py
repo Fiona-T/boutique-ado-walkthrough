@@ -25,24 +25,25 @@ class OrderForm(forms.ModelForm):
             'full_name': 'Full Name',
             'email': 'Email Address',
             'phone_number': 'Phone Number',
-            'country': 'Country',
             'postcode': 'Postal Code',
             'town_or_city': 'Town or City',
             'street_address1': 'Street Address 1',
             'street_address2': 'Street Address 2',
-            'county': 'County',
+            'county': 'County, State or Locality',
         }
         # autofocus on the first field
         self.fields['full_name'].widget.attrs['autofocus'] = True
         # iterate through the fields to make the updates:
         for field in self.fields:
-            # add an asterisk to the required fields placeholder text
-            if self.fields[field].required:
-                placeholder = f'{placeholders[field]} *'
-            else:
-                placeholder = placeholders[field]
-            # set the placeholder attributes
-            self.fields[field].widget.attrs['placeholder'] = placeholder
+            # not on country since this is a dropdown box with no placeholder
+            if field != 'country':
+                # add an asterisk to the required fields placeholder text
+                if self.fields[field].required:
+                    placeholder = f'{placeholders[field]} *'
+                else:
+                    placeholder = placeholders[field]
+                # set the placeholder attributes
+                self.fields[field].widget.attrs['placeholder'] = placeholder
             # add css class
             self.fields[field].widget.attrs['class'] = 'stripe-style-input'
             # remove the field labels

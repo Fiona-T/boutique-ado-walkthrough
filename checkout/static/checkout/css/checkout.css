@@ -36,6 +36,20 @@
     border: 1px solid #000;
 }
 
+/* set colour for select box and select option children */
+select,
+select option {
+    color: #000000;
+}
+
+/* set color to grey for invalid dropdown selection, and for the
+blank label option at the top of the Country select box
+*/
+select:invalid,
+select option[value=""] {
+    color: #aab7c4 !important;
+}
+
 #loading-overlay {
 	display: none;
 	position: fixed;
