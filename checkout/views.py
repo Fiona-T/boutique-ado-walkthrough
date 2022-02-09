@@ -9,6 +9,8 @@ import stripe
 
 from bag.contexts import bag_contents
 from products.models import Product
+from profiles.models import UserProfile
+from profiles.forms import UserProfileForm
 from .forms import OrderForm
 from .models import OrderLineItem, Order
 
@@ -106,7 +108,7 @@ def checkout(request):
                     order.delete()
                     return redirect(reverse('view_bag'))
             # attach whether or not the user wanted to save their info - to the session
-            request.session['save_info'] = 'save_info' in request.POST
+            request.session['save_info'] = 'save-info' in request.POST
             # return to success url, with order number passed to it
             return redirect(reverse('checkout_success', args=[order.order_number]))
         else:
@@ -134,8 +136,29 @@ def checkout(request):
             amount=stripe_total,
             currency=settings.STRIPE_CURRENCY,
         )
-        # empty instance of orderform
-        order_form = OrderForm()
+        # generate order form - either prefilled or empty:
+        # Attempt to prefill the form with any info the user maintains in their profile
+        if request.user.is_authenticated:
+            try:
+                # get their profile
+                profile = UserProfile.objects.get(user=request.user)
+                # set the initial values on the form, with values from account + profile
+                order_form = OrderForm(initial={
+                    'full_name': profile.user.get_full_name(),
+                    'email': profile.user.email,
+                    'phone_number': profile.default_phone_number,
+                    'country': profile.default_country,
+                    'postcode': profile.default_postcode,
+                    'town_or_city': profile.default_town_or_city,
+                    'street_address1': profile.default_street_address1,
+                    'street_address2': profile.default_street_address2,
+                    'county': profile.default_county,
+                })
+            except UserProfile.DoesNotExist:
+                order_form = OrderForm()
+        else:
+            # empty instance of orderform if user not logged in
+            order_form = OrderForm()
 
     # message alert if public key not set
     if not stripe_public_key:
@@ -154,13 +177,45 @@ def checkout(request):
 
 def checkout_success(request, order_number):
     """
-    Handle successful checkouts
+    Handle successful checkouts + attach user profile to order
+    so that it appears in their order history
     """
     # check if user wanted to save info - get from session - will use later
     # this was added to session in post part of checkout view
     save_info = request.session.get('save_info')
+    print(save_info)
     # get the order using the order number
     order = get_object_or_404(Order, order_number=order_number)
+    # if the user is logged in, then we want to attach the user to the order
+    # and also check if they want their delivery info saved to their profile
+    if request.user.is_authenticated:
+        print('authenticated user')
+        # get the user's profile
+        profile = UserProfile.objects.get(user=request.user)
+        # Attach it to the order
+        order.user_profile = profile
+        order.save()
+
+        # if user ticked the save info box
+        if save_info:
+            print('saving info')
+            # get the data to save into the user's profile
+            # keys of this dict match the fields on userprofile model
+            profile_data = {
+                'default_phone_number': order.phone_number,
+                'default_country': order.country,
+                'default_postcode': order.postcode,
+                'default_town_or_city': order.town_or_city,
+                'default_street_address1': order.street_address1,
+                'default_street_address2': order.street_address2,
+                'default_county': order.county,
+            }
+            # create instance of userprofileform, using the above data
+            # and telling it to update profile variable from above
+            user_profile_form = UserProfileForm(profile_data, instance=profile)
+            if user_profile_form.is_valid():
+                user_profile_form.save()
+
     messages.success(request, f'Order successfully processed! \
         Your order number is {order_number}. A confirmation \
         email will be sent to {order.email}.')
