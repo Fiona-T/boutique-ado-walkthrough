@@ -5,12 +5,13 @@
     </a>
     {% if not widget.required %}
         <div class="custom-control custom-checkbox mt-2">
-            <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"
-                {% if widget.attrs.disabled %} disabled{% endif %}>
-            <label for="{{ widget.checkbox_id }}">{{ widget.clear_checkbox_label }}</label>
+            <input class="custom-control-input" type="checkbox" name="{{ widget.checkbox_name }}"
+                id="{{ widget.checkbox_id }}" {% if widget.attrs.disabled %} disabled{% endif %}>
+            <label class="custom-control-label text-danger"
+                for="{{ widget.checkbox_id }}">{{ widget.clear_checkbox_label }}</label>
         </div>
     {% endif %}<br>
-    {{ widget.input_text }}:
+    {{ widget.input_text }}
 {% endif %}
 <!-- file input -->
 <span class="btn btn-black rounded-0 btn-file">
