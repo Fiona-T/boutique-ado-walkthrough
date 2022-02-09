@@ -3,6 +3,7 @@ import json
 import time
 from django.http import HttpResponse
 from products.models import Product
+from profiles.models import UserProfile
 from .models import Order, OrderLineItem
 
 
@@ -49,6 +50,23 @@ class StripeWH_Handler:
         for field, value in shipping_details.address.items():
             if value == "":
                 shipping_details.address[field] = None
+
+        # update the user profile if save info box was ticked
+        profile = None
+        # get username, if they're not anonymous then they're logged in
+        username = intent.metadata.username
+        if username != 'AnonymousUser':
+            profile = UserProfile.objects.get(user__username=username)
+            if save_info:
+                profile.default_phone_number = shipping_details.phone
+                profile.default_country = shipping_details.address.country
+                profile.default_postcode = shipping_details.address.postal_code
+                profile.default_town_or_city = shipping_details.address.city
+                profile.default_street_address1 = shipping_details.address.line1
+                profile.default_street_address2 = shipping_details.address.line2
+                profile.default_county = shipping_details.address.state
+                profile.save()
+
         # usually the form will be submitted and therefore the order created
         # so order already in db when we receive the webhook
         # check if the order exists, if it does, return response
@@ -93,6 +111,7 @@ class StripeWH_Handler:
             try:
                 order = Order.objects.create(
                     full_name=shipping_details.name,
+                    user_profile=profile,
                     email=billing_details.email,
                     phone_number=shipping_details.phone,
                     country=shipping_details.address.country,
