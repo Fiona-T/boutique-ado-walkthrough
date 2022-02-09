@@ -24,7 +24,11 @@
             <div class="row">
                 <!-- 1st column = product image -->
                 <div class="col-3 my-1">
-                    <img class="w-100" src="{{ item.product.image.url }}">
+                    {% if item.product.image %}
+                    <img class="w-100" src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                    {% else %}
+                    <img class="w-100" src="{{ MEDIA_URL }}noimage.png" alt="{{ item.product.name }}">
+                    {% endif %}
                 </div>
                 <!-- 2nd col = name, size info, quantity -->
                 <div class="col-9">
