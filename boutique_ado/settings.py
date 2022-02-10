@@ -129,8 +129,8 @@ WSGI_APPLICATION = 'boutique_ado.wsgi.application'
 if 'DATABSE_URL' in os.environ:
     # DATABASE URL is in Heroku config var - so if there, use the HerokuPostgres
     DATABASES = {
-        'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
-    }
+            'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+        }
 else:
     # and default in dev
     DATABASES = {
